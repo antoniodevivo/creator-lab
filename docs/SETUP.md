@@ -167,6 +167,7 @@ If an Apify launch response is lost, the app blocks a duplicate launch. Find the
 | HTTP 429 / paused run | Check provider quotas. Wait for reset or lower pacing; then resume. Short rate limits retry automatically. |
 | Groq upgrade unavailable | Configure Fireworks instead. Existing transcripts remain cached. |
 | No audio / too little speech | These Reels are excluded from spoken-script comparisons. They are not pending labels. |
+| `Media download failed (ETIMEDOUT)` in WSL or on networks without IPv6 | Update to this version: Node's default 250 ms per connection attempt was too short when IPv6 is unreachable and the CDN's IPv4 edge is slower; the app now allows 2.5 s. Resume the run. |
 | Failed download or expired media | Inspect the original Reel. Resume can retry, but an expired source URL may require a fresh collection. |
 | Graph has fewer points than Reels | Missing/nonpositive plays or views, unknown likes, age filters, duplicates and exclusions can remove points. |
 | No Reels returned | Check the username, whether the account is public, Actor access, budget and the Apify run log. |
