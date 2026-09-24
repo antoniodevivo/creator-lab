@@ -39,3 +39,16 @@ test('runs created before the choice existed were classified by Jev', async () =
     assert.equal(p.classifierFor({ classifier: 'laya' }), 'laya');
   });
 });
+
+test('Laya on CUDA is offered only where the GPU runtime is installed', async () => {
+  const { availableClassifiers } = await import('../lib/providers.mjs');
+  const { cudaAvailable } = await import('../lib/laya.mjs');
+  const list = availableClassifiers();
+  assert.ok(list.includes('laya') && list.includes('jev'));
+  assert.equal(list.includes('laya-cuda'), cudaAvailable());
+  await withPipeline({}, {}, async p => {
+    const attempt = p.create({ creator: 'tester', limit: 1, classifier: 'laya-cuda' }, rows);
+    if (cudaAvailable()) assert.equal((await attempt).classifier, 'laya-cuda');
+    else await assert.rejects(attempt, /CUDA is not available/);
+  });
+});

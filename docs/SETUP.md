@@ -99,6 +99,18 @@ The default local pacing settings are `FIREWORKS_REQUESTS_PER_MINUTE=60` and `GR
 
 Keys can alternatively be supplied through environment variables or the app's **Connections** dialog. Dialog keys last until the server stops. `.env` keys persist locally. This distribution does not read a parent folder's `.env`.
 
+## Optional: Laya on an NVIDIA GPU
+
+On the processor Laya takes roughly 10–15 s per Reel. On an NVIDIA GPU it takes well under a second (0.33 s per Reel measured on an RTX 5060 Ti, with the same labels). This needs Linux x64; on Windows, run Creator Lab inside WSL2 (the Windows NVIDIA driver already exposes the GPU to WSL; check with `nvidia-smi` inside WSL). Install Node.js for Linux inside WSL, then, in the project folder:
+
+```sh
+npm install
+npm run laya:cuda-setup   # CUDA provider for onnxruntime-node; CUDA 13 runtime libraries via uv, no sudo
+npm run start:cuda        # starts the server with those libraries available
+```
+
+`laya:cuda-setup` installs the NVIDIA libraries under `~/.local/laya-cuda` when [uv](https://docs.astral.sh/uv/) is installed; otherwise install CUDA 13 (cudart and cuBLAS) system-wide. cuDNN is not needed. When the GPU runtime is found, **New analysis** offers **Laya · GPU (CUDA)** next to **Laya · processor**; otherwise only the processor option is shown. Both run the same model and share cached results. The browser on Windows opens the server at the usual `http://127.0.0.1:5190`. Inside WSL, keep the Laya model cache on the Linux filesystem (the default `~/.cache/receptron-laya`): loading it from `/mnt/c` took about 60 s instead of 5 s. FFmpeg must also be installed inside WSL (`sudo apt install ffmpeg`) because transcription runs there too.
+
 ## 5. Launch and verify
 
 ```sh

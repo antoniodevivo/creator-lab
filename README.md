@@ -56,7 +56,8 @@ The classifier sees the speech before performance metrics are joined. Views and 
 | Collect Reel metadata and media URLs | [Apify Instagram Reel Scraper](https://apify.com/apify/instagram-reel-scraper) | `APIFY_TOKEN` |
 | Transcribe, default option | [Fireworks](https://fireworks.ai/) | `TRANSCRIPTION_PROVIDER=fireworks`, `FIREWORKS_API_KEY` |
 | Transcribe, alternative | [Groq](https://console.groq.com/docs/speech-to-text) | `TRANSCRIPTION_PROVIDER=groq`, `GROQ_API_KEY` |
-| Classify scripts, default option | [Laya](https://github.com/receptron/laya), local, no key | Choose **Laya** in New analysis |
+| Classify scripts, default option | [Laya](https://github.com/receptron/laya), local, no key | Choose **Laya · processor** in New analysis |
+| Classify scripts, NVIDIA GPU | Laya on CUDA, Linux or WSL2 only | `npm run laya:cuda-setup`, then `npm run start:cuda`; choose **Laya · GPU (CUDA)** |
 | Classify scripts, alternative | [TypeSafe Jev](https://docs.typesafe.ai/api) | Choose **Jev** in New analysis, `TYPESAFE_API_KEY` |
 
 Use either transcription provider. There is no automatic switch that could charge a different provider. Restart the server after changing `.env`.
