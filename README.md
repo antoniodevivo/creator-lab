@@ -16,7 +16,7 @@ Built with **Apify → Fireworks or Groq → a Jev-compatible classifier**. Clas
 2. Download this repository using **Code → Download ZIP**, unzip it, and open a terminal in that folder. Or clone it:
 
    ```sh
-   git clone https://github.com/artemnovitckii/creator-lab.git
+   git clone https://github.com/antoniodevivo/creator-lab.git
    cd creator-lab
    ```
 

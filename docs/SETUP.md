@@ -42,12 +42,12 @@ ffprobe -version
 
 ## 2. Download Creator Lab
 
-On the [repository page](https://github.com/artemnovitckii/creator-lab), click **Code → Download ZIP**, then extract the ZIP. Open a terminal inside the extracted folder, where `package.json` is located.
+On the [repository page](https://github.com/antoniodevivo/creator-lab), click **Code → Download ZIP**, then extract the ZIP. Open a terminal inside the extracted folder, where `package.json` is located.
 
 If you use Git:
 
 ```sh
-git clone https://github.com/artemnovitckii/creator-lab.git
+git clone https://github.com/antoniodevivo/creator-lab.git
 cd creator-lab
 ```
 
