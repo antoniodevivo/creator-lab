@@ -1,6 +1,6 @@
 # Set up your own creator research dashboard
 
-You need a computer, Node.js, FFmpeg, and three API keys: Apify, TypeSafe Jev, and either Fireworks or Groq. You do not need both speech providers. No Instagram password is requested.
+You need a computer, Node.js, FFmpeg, and two API keys: Apify, and either Fireworks or Groq. Scripts are classified locally with Laya, an open-source Jev-compatible model, so no classifier key is needed (TypeSafe Jev is still supported). You do not need both speech providers. No Instagram password is requested.
 
 ## 1. Install the tools
 
@@ -54,8 +54,11 @@ cd creator-lab
 Run:
 
 ```sh
+npm install
 npm run setup
 ```
+
+`npm install` adds Laya and ONNX Runtime. The Laya model itself (about 1.7 GB) is downloaded from Hugging Face the first time you verify Connections or classify a script, and cached under `~/.cache/receptron-laya` (set `LAYA_CACHE` to move it). Budget about 2 GB of RAM for it while the server runs.
 
 This copies `.env.example` to `.env`. It never overwrites an existing `.env`. Open `.env` with a text editor. Dotfiles may be hidden in Finder; an editor such as VS Code can open the folder and show them.
 
@@ -64,7 +67,7 @@ This copies `.env.example` to `.env`. It never overwrites an existing `.env`. Op
 | Key | Where to get it | What it does |
 | --- | --- | --- |
 | Apify | [Apify Console](https://console.apify.com/), account settings / API integrations | Collects Reel URLs, thumbnails and public metrics |
-| Jev | [TypeSafe](https://typesafe.ai/), your account's API key settings; [API documentation](https://docs.typesafe.ai/api) | Labels transcripts and script passages |
+| Jev, optional | [TypeSafe](https://typesafe.ai/), your account's API key settings; [API documentation](https://docs.typesafe.ai/api). Only with `CLASSIFIER=jev` | Labels transcripts and script passages instead of local Laya |
 | Fireworks, one option | [Fireworks account](https://app.fireworks.ai/), API keys | Transcribes audio with Whisper V3 Turbo |
 | Groq, alternative | [Groq API keys](https://console.groq.com/keys) | Transcribes audio with Whisper Large V3 Turbo |
 
@@ -76,7 +79,7 @@ For **Fireworks**, fill these entries in `.env`:
 
 ```dotenv
 APIFY_TOKEN=your_apify_token
-TYPESAFE_API_KEY=your_typesafe_key
+CLASSIFIER=laya
 TRANSCRIPTION_PROVIDER=fireworks
 FIREWORKS_API_KEY=your_fireworks_key
 PORT=5190
@@ -86,13 +89,13 @@ For **Groq**, use:
 
 ```dotenv
 APIFY_TOKEN=your_apify_token
-TYPESAFE_API_KEY=your_typesafe_key
+CLASSIFIER=laya
 TRANSCRIPTION_PROVIDER=groq
 GROQ_API_KEY=your_groq_key
 PORT=5190
 ```
 
-Replace the example values with your own keys. Keep just one value per setting. Leave the unused speech provider key empty. You do not need to edit any JavaScript.
+Replace the example values with your own keys. Keep just one value per setting. Leave the unused speech provider key empty. You do not need to edit any JavaScript. To classify with TypeSafe Jev instead of Laya, set `CLASSIFIER=jev` and `TYPESAFE_API_KEY=your_typesafe_key`. Laya and Jev results are cached separately.
 
 The default local pacing settings are `FIREWORKS_REQUESTS_PER_MINUTE=60` and `GROQ_REQUESTS_PER_MINUTE=20`. These are local ceilings, not a statement of your account quota. Lower them if your account has a lower limit. Audio-duration quotas can also apply.
 
@@ -107,7 +110,7 @@ npm start
 
 Doctor checks installed tools and key presence without printing keys or calling provider APIs. Open **http://127.0.0.1:5190** in your browser. Keep the terminal open while processing.
 
-Open **Connections** and use **Save & verify connections**. Only Apify, Jev, and the selected speech provider are needed. A missing unused speech key is fine. Verification confirms API access; your first audio request still needs to succeed.
+Open **Connections** and use **Save & verify connections**. Only Apify, the selected speech provider and the classifier are needed. For Laya, verification loads the local model (the first time this includes the download, so it can take several minutes). A missing unused speech key is fine. Verification confirms API access; your first audio request still needs to succeed.
 
 To stop the server, press **Ctrl+C** in its terminal. After editing `.env`, stop and start it again.
 
@@ -120,7 +123,7 @@ To stop the server, press **Ctrl+C** in its terminal. After editing `.env`, stop
 5. Start the run. Watch Run activity for collection, transcription, and classification.
 6. Inspect a few transcripts and original Reels before collecting a larger batch.
 
-The pipeline downloads media, extracts 16 kHz mono audio with FFmpeg, sends it to your chosen transcription service, and asks Jev to label the resulting speech. Each stage takes real time. The animated replay runs only after results exist.
+The pipeline downloads media, extracts 16 kHz mono audio with FFmpeg, sends it to your chosen transcription service, and asks the classifier (Laya locally, or Jev) to label the resulting speech. Each stage takes real time. The animated replay runs only after results exist.
 
 A run supports up to 1,000 requested Reels. Instagram availability and the scraper determine what is actually returned. Pinned and trial Reels are skipped. This is not a guarantee of analyzing every Reel on any account.
 
@@ -162,7 +165,7 @@ If an Apify launch response is lost, the app blocks a duplicate launch. Find the
 
 ## Costs, privacy and sharing
 
-The app's estimated costs are separate for collection, speech and Jev. Account minimums, retries and rate changes can affect the actual bill. Provider billing is authoritative. [Groq speech documentation](https://console.groq.com/docs/speech-to-text), [Apify Actor pricing](https://apify.com/apify/instagram-reel-scraper/pricing), and [TypeSafe documentation](https://docs.typesafe.ai/) are the starting points for current terms. The Fireworks implementation uses its Whisper Turbo audio endpoint; confirm availability in your account.
+The app's estimated costs are separate for collection, speech and Jev. Laya runs locally and shows a cost of $0. Account minimums, retries and rate changes can affect the actual bill. Provider billing is authoritative. [Groq speech documentation](https://console.groq.com/docs/speech-to-text), [Apify Actor pricing](https://apify.com/apify/instagram-reel-scraper/pricing), and [TypeSafe documentation](https://docs.typesafe.ai/) are the starting points for current terms. The Fireworks implementation uses its Whisper Turbo audio endpoint; confirm availability in your account.
 
 Do not publish `.env`, `data/`, screenshots of keys, or your exported archive by accident. These files are excluded from Git by default. [Read the data flow](PRIVACY.md). The server is intended for your own computer, not public hosting.
 
