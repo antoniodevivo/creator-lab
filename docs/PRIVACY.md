@@ -5,7 +5,8 @@
 - Apify receives the creator handle and scrape configuration.
 - The server downloads supported Instagram/CDN media and extracts audio locally. Temporary extraction files are removed after processing.
 - Fireworks or Groq receives extracted audio for transcription. Only the selected provider is used.
-- TypeSafe Jev receives transcript text and segment identifiers for classification. It does not receive the post's engagement metrics or caption in the classification request.
+- In runs that use Laya (the default) classification runs on your computer; transcript text is not sent anywhere. The model files are downloaded once from Hugging Face.
+- In runs that use Jev, TypeSafe Jev receives transcript text and segment identifiers for classification. It does not receive the post's engagement metrics or caption in the classification request.
 - The browser loads Google Fonts. Original-Reel links open Instagram; video previews and thumbnails may make source-media requests.
 - `data/runs/` stores run state, provider responses and raw imported/scraped rows. `data/cache/` stores transcripts and classifications. `data/media/` stores thumbnails. Treat this directory as private project data.
 - JSON exports omit raw transcription and classification response objects and do not include API keys. They still contain creator content, metrics and source media URLs; review before sharing.

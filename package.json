@@ -5,14 +5,23 @@
   "scripts": {
     "start": "node --env-file-if-exists=.env server.mjs",
     "test": "node --test tests/*.test.mjs",
-    "check": "node --check server.mjs && node --check lib/pipeline.mjs && node --check lib/providers.mjs && node --check public/app.js && node --check public/research.mjs && node --check public/record.js && node --check scripts/setup.mjs && node --check scripts/doctor.mjs",
+    "check": "node --check server.mjs && node --check lib/pipeline.mjs && node --check lib/providers.mjs && node --check lib/laya.mjs && node --check scripts/laya-cuda.mjs && node --check public/app.js && node --check public/research.mjs && node --check public/record.js && node --check scripts/setup.mjs && node --check scripts/doctor.mjs",
     "setup": "node scripts/setup.mjs",
-    "doctor": "node scripts/doctor.mjs"
+    "doctor": "node scripts/doctor.mjs",
+    "laya:smoke": "node scripts/laya-smoke.mjs",
+    "laya:compare": "node scripts/laya-vs-jev.mjs",
+    "laya:cuda-setup": "node scripts/laya-cuda.mjs setup",
+    "start:cuda": "node scripts/laya-cuda.mjs start"
   },
   "engines": {
     "node": ">=22.9.0"
   },
   "version": "1.0.0",
-  "description": "Local Instagram Reel research with Apify, Jev, and Fireworks or Groq.",
-  "license": "MIT"
+  "description": "Local Instagram Reel research with Apify, Fireworks or Groq, and a Jev-compatible classifier (local Laya or TypeSafe Jev).",
+  "license": "MIT",
+  "dependencies": {
+    "@ffmpeg-installer/ffmpeg": "^1.1.0",
+    "@ffprobe-installer/ffprobe": "^2.1.2",
+    "@receptron/laya": "^0.1.2"
+  }
 }

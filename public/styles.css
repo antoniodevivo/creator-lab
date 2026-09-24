@@ -14,3 +14,14 @@
 @media(max-width:760px){.research-filters{padding:13px 12px;gap:10px}.research-filters label{flex:1;display:block;min-width:0}.research-filters select{display:block;width:100%;min-width:0;margin-top:5px;font-size:11px}.filter-join{margin-top:12px}.research-jump{font-size:10px}.research-filters .quiet{font-size:10px;padding:4px 0}.findings-header{display:block}.findings-header h2{font-size:30px}.findings-sort{margin-top:15px;flex-direction:row;align-items:center;justify-content:space-between}.research-summary{grid-template-columns:repeat(2,minmax(0,1fr))}.research-summary>div{padding:14px!important;border-bottom:1px solid var(--line)}.research-summary>div:nth-child(2){border-right:0}.research-summary strong{font-size:25px}.comparison-toolbar p{font-size:11px}.comparison{padding:12px}.comparison article{padding:14px}.example-grid{grid-template-columns:1fr}.example-card{grid-template-columns:105px minmax(0,1fr)}.examples-heading h3{font-size:23px}.examples-pagination{font-size:8px}.examples-pagination button{font-size:10px;padding-inline:0}.example-thumbnail{min-height:200px}.findings table{min-width:610px}.findings .table-wrap{max-width:100%}.comparison dl>div{font-size:11px}}
 
 .inspector.no-matches>:not(.inspector-empty){display:none}.inspector-empty{font-size:12px;line-height:1.8;color:var(--muted);padding:20px 0}
+
+.phases{display:grid;grid-template-columns:repeat(4,1fr);border:1px solid var(--line);border-top:0;margin:-23px 0 23px;background:#f9f8f2}
+.phase{padding:12px 21px;border-right:1px solid var(--line)}
+.phase:last-child{border:0}
+.phase span{font:9px var(--mono);letter-spacing:1px;color:var(--muted);display:block}
+.phase small{font:10px var(--mono);color:var(--muted);font-variant-numeric:tabular-nums}
+.phase-track{display:flex;height:4px;background:#e2e4d8;margin:10px 0 8px}
+.phase-done{background:#7c9668;transition:width .5s}
+.phase-failed{background:#c0694f;transition:width .5s}
+@media (max-width:760px){.phases{grid-template-columns:1fr 1fr}.phase:nth-child(2){border-right:0}.phase:nth-child(-n+2){border-bottom:1px solid var(--line)}}
+.portrait .phases{display:none}

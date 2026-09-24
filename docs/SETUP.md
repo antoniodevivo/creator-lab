@@ -1,61 +1,41 @@
 # Set up your own creator research dashboard
 
-You need a computer, Node.js, FFmpeg, and three API keys: Apify, TypeSafe Jev, and either Fireworks or Groq. You do not need both speech providers. No Instagram password is requested.
+You need a computer, Node.js, and two API keys: Apify, and either Fireworks or Groq. Scripts are classified locally with Laya, an open-source Jev-compatible model, so no classifier key is needed (TypeSafe Jev is still supported). You do not need both speech providers. No Instagram password is requested.
 
 ## 1. Install the tools
 
 Install Node.js 24 from [nodejs.org](https://nodejs.org/en/download). Node 22.9 or newer also works. Open a new terminal after installing it.
 
-Install FFmpeg using the option for your computer:
+FFmpeg and ffprobe are installed with the project (`npm install` in step 2): the `@ffmpeg-installer/ffmpeg` and `@ffprobe-installer/ffprobe` packages ship a binary per platform, so you do not need a separate FFmpeg install. If no bundled binary exists for your platform, the app falls back to `ffmpeg` and `ffprobe` on PATH.
 
-**macOS with Homebrew**
-
-```sh
-brew install ffmpeg
-```
-
-If you do not have Homebrew, use the macOS build links on [FFmpeg's download page](https://ffmpeg.org/download.html), or install Homebrew from its official site first.
-
-**Windows with WinGet, in PowerShell**
-
-```powershell
-winget install --id Gyan.FFmpeg --exact
-```
-
-Close and reopen PowerShell after installation. If WinGet is unavailable, use the Windows build links on FFmpeg's download page and add its `bin` folder to PATH.
-
-**Ubuntu / Debian**
-
-```sh
-sudo apt update
-sudo apt install ffmpeg
-```
+With pnpm, `pnpm-workspace.yaml` installs the Windows and Linux binaries side by side, so the same folder works from Windows and from WSL2. npm installs only the binaries for the system you run it on.
 
 Verify installation:
 
 ```sh
 node --version
 npm --version
-ffmpeg -version
-ffprobe -version
 ```
 
 ## 2. Download Creator Lab
 
-On the [repository page](https://github.com/artemnovitckii/creator-lab), click **Code → Download ZIP**, then extract the ZIP. Open a terminal inside the extracted folder, where `package.json` is located.
+On the [repository page](https://github.com/antoniodevivo/creator-lab), click **Code → Download ZIP**, then extract the ZIP. Open a terminal inside the extracted folder, where `package.json` is located.
 
 If you use Git:
 
 ```sh
-git clone https://github.com/artemnovitckii/creator-lab.git
+git clone https://github.com/antoniodevivo/creator-lab.git
 cd creator-lab
 ```
 
 Run:
 
 ```sh
+npm install
 npm run setup
 ```
+
+`npm install` adds Laya and ONNX Runtime. The Laya model itself (about 1.7 GB) is downloaded from Hugging Face the first time you verify Connections or classify a script, and cached under `~/.cache/receptron-laya` (set `LAYA_CACHE` to move it). Budget about 2 GB of RAM for it while the server runs.
 
 This copies `.env.example` to `.env`. It never overwrites an existing `.env`. Open `.env` with a text editor. Dotfiles may be hidden in Finder; an editor such as VS Code can open the folder and show them.
 
@@ -64,7 +44,7 @@ This copies `.env.example` to `.env`. It never overwrites an existing `.env`. Op
 | Key | Where to get it | What it does |
 | --- | --- | --- |
 | Apify | [Apify Console](https://console.apify.com/), account settings / API integrations | Collects Reel URLs, thumbnails and public metrics |
-| Jev | [TypeSafe](https://typesafe.ai/), your account's API key settings; [API documentation](https://docs.typesafe.ai/api) | Labels transcripts and script passages |
+| Jev, optional | [TypeSafe](https://typesafe.ai/), your account's API key settings; [API documentation](https://docs.typesafe.ai/api). Only for runs that choose Jev | Labels transcripts and script passages instead of local Laya |
 | Fireworks, one option | [Fireworks account](https://app.fireworks.ai/), API keys | Transcribes audio with Whisper V3 Turbo |
 | Groq, alternative | [Groq API keys](https://console.groq.com/keys) | Transcribes audio with Whisper Large V3 Turbo |
 
@@ -76,7 +56,6 @@ For **Fireworks**, fill these entries in `.env`:
 
 ```dotenv
 APIFY_TOKEN=your_apify_token
-TYPESAFE_API_KEY=your_typesafe_key
 TRANSCRIPTION_PROVIDER=fireworks
 FIREWORKS_API_KEY=your_fireworks_key
 PORT=5190
@@ -86,17 +65,28 @@ For **Groq**, use:
 
 ```dotenv
 APIFY_TOKEN=your_apify_token
-TYPESAFE_API_KEY=your_typesafe_key
 TRANSCRIPTION_PROVIDER=groq
 GROQ_API_KEY=your_groq_key
 PORT=5190
 ```
 
-Replace the example values with your own keys. Keep just one value per setting. Leave the unused speech provider key empty. You do not need to edit any JavaScript.
+Replace the example values with your own keys. Keep just one value per setting. Leave the unused speech provider key empty. You do not need to edit any JavaScript. The classifier is chosen for each analysis in the **New analysis** form. Laya is the default and needs no key; to choose Jev, also add `TYPESAFE_API_KEY=your_typesafe_key`. A run keeps its classifier when paused and resumed. Laya and Jev results are cached separately.
 
 The default local pacing settings are `FIREWORKS_REQUESTS_PER_MINUTE=60` and `GROQ_REQUESTS_PER_MINUTE=20`. These are local ceilings, not a statement of your account quota. Lower them if your account has a lower limit. Audio-duration quotas can also apply.
 
 Keys can alternatively be supplied through environment variables or the app's **Connections** dialog. Dialog keys last until the server stops. `.env` keys persist locally. This distribution does not read a parent folder's `.env`.
+
+## Optional: Laya on an NVIDIA GPU
+
+On the processor Laya takes roughly 10–15 s per Reel. On an NVIDIA GPU it takes well under a second (0.33 s per Reel measured on an RTX 5060 Ti, with the same labels). This needs Linux x64; on Windows, run Creator Lab inside WSL2 (the Windows NVIDIA driver already exposes the GPU to WSL; check with `nvidia-smi` inside WSL). Install Node.js for Linux inside WSL, then, in the project folder:
+
+```sh
+npm install
+npm run laya:cuda-setup   # CUDA provider for onnxruntime-node; CUDA 13 runtime libraries via uv, no sudo
+npm run start:cuda        # starts the server with those libraries available
+```
+
+`laya:cuda-setup` installs the NVIDIA libraries under `~/.local/laya-cuda` when [uv](https://docs.astral.sh/uv/) is installed; otherwise install CUDA 13 (cudart and cuBLAS) system-wide. cuDNN is not needed. When the GPU runtime is found, **New analysis** offers **Laya · GPU (CUDA)** next to **Laya · processor**; otherwise only the processor option is shown. Both run the same model and share cached results. The browser on Windows opens the server at the usual `http://127.0.0.1:5190`. Inside WSL, keep the Laya model cache on the Linux filesystem (the default `~/.cache/receptron-laya`): loading it from `/mnt/c` took about 60 s instead of 5 s.
 
 ## 5. Launch and verify
 
@@ -107,7 +97,7 @@ npm start
 
 Doctor checks installed tools and key presence without printing keys or calling provider APIs. Open **http://127.0.0.1:5190** in your browser. Keep the terminal open while processing.
 
-Open **Connections** and use **Save & verify connections**. Only Apify, Jev, and the selected speech provider are needed. A missing unused speech key is fine. Verification confirms API access; your first audio request still needs to succeed.
+Open **Connections** and use **Save & verify connections**. Only Apify, the selected speech provider and the classifier are needed. For Laya, verification loads the local model (the first time this includes the download, so it can take several minutes). A missing unused speech key is fine. Verification confirms API access; your first audio request still needs to succeed.
 
 To stop the server, press **Ctrl+C** in its terminal. After editing `.env`, stop and start it again.
 
@@ -120,7 +110,7 @@ To stop the server, press **Ctrl+C** in its terminal. After editing `.env`, stop
 5. Start the run. Watch Run activity for collection, transcription, and classification.
 6. Inspect a few transcripts and original Reels before collecting a larger batch.
 
-The pipeline downloads media, extracts 16 kHz mono audio with FFmpeg, sends it to your chosen transcription service, and asks Jev to label the resulting speech. Each stage takes real time. The animated replay runs only after results exist.
+The pipeline downloads media, extracts 16 kHz mono audio with FFmpeg, sends it to your chosen transcription service, and asks the classifier (Laya locally, or Jev) to label the resulting speech. Each stage takes real time. The animated replay runs only after results exist.
 
 A run supports up to 1,000 requested Reels. Instagram availability and the scraper determine what is actually returned. Pinned and trial Reels are skipped. This is not a guarantee of analyzing every Reel on any account.
 
@@ -148,12 +138,13 @@ If an Apify launch response is lost, the app blocks a duplicate launch. Find the
 | --- | --- |
 | `node` or `npm` not found | Install Node.js, then reopen the terminal. |
 | `--env-file-if-exists` unsupported | Upgrade to Node 22.9 or newer. |
-| FFmpeg or ffprobe missing | Install FFmpeg and ensure both commands are on PATH. |
+| FFmpeg or ffprobe missing | Run `npm install` again (the binaries come from npm). On an unsupported platform, install FFmpeg and put `ffmpeg` and `ffprobe` on PATH. |
 | Missing key after editing `.env` | Confirm it is named `.env`, not `.env.txt`, in the same folder as `server.mjs`. Restart. |
 | HTTP 401 or 403 | Check the selected provider key, account permissions and billing. |
 | HTTP 429 / paused run | Check provider quotas. Wait for reset or lower pacing; then resume. Short rate limits retry automatically. |
 | Groq upgrade unavailable | Configure Fireworks instead. Existing transcripts remain cached. |
 | No audio / too little speech | These Reels are excluded from spoken-script comparisons. They are not pending labels. |
+| `Media download failed (ETIMEDOUT)` in WSL or on networks without IPv6 | Update to this version: Node's default 250 ms per connection attempt was too short when IPv6 is unreachable and the CDN's IPv4 edge is slower; the app now allows 2.5 s. Resume the run. |
 | Failed download or expired media | Inspect the original Reel. Resume can retry, but an expired source URL may require a fresh collection. |
 | Graph has fewer points than Reels | Missing/nonpositive plays or views, unknown likes, age filters, duplicates and exclusions can remove points. |
 | No Reels returned | Check the username, whether the account is public, Actor access, budget and the Apify run log. |
@@ -162,7 +153,7 @@ If an Apify launch response is lost, the app blocks a duplicate launch. Find the
 
 ## Costs, privacy and sharing
 
-The app's estimated costs are separate for collection, speech and Jev. Account minimums, retries and rate changes can affect the actual bill. Provider billing is authoritative. [Groq speech documentation](https://console.groq.com/docs/speech-to-text), [Apify Actor pricing](https://apify.com/apify/instagram-reel-scraper/pricing), and [TypeSafe documentation](https://docs.typesafe.ai/) are the starting points for current terms. The Fireworks implementation uses its Whisper Turbo audio endpoint; confirm availability in your account.
+The app's estimated costs are separate for collection, speech and Jev. Laya runs locally and shows a cost of $0. Account minimums, retries and rate changes can affect the actual bill. Provider billing is authoritative. [Groq speech documentation](https://console.groq.com/docs/speech-to-text), [Apify Actor pricing](https://apify.com/apify/instagram-reel-scraper/pricing), and [TypeSafe documentation](https://docs.typesafe.ai/) are the starting points for current terms. The Fireworks implementation uses its Whisper Turbo audio endpoint; confirm availability in your account.
 
 Do not publish `.env`, `data/`, screenshots of keys, or your exported archive by accident. These files are excluded from Git by default. [Read the data flow](PRIVACY.md). The server is intended for your own computer, not public hosting.
 
