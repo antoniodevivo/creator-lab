@@ -11,10 +11,8 @@ for(const cmd of ['ffmpeg','ffprobe'])check(cmd,spawnSync(cmd,['-version'],{stdi
 const provider=value('TRANSCRIPTION_PROVIDER')||'fireworks';
 check('Transcription provider',['fireworks','groq'].includes(provider),'Set TRANSCRIPTION_PROVIDER to fireworks or groq.');
 check('Apify key',Boolean(value('APIFY_TOKEN')||value('APIFY_API_TOKEN')),'Add APIFY_TOKEN to .env.');
-const classifier=(value('CLASSIFIER')||'laya').toLowerCase();
-check('Classifier',['laya','jev'].includes(classifier),'Set CLASSIFIER to laya or jev.');
-if(classifier==='jev')check('Jev key',Boolean(value('TYPESAFE_API_KEY')||value('JEV_API_KEY')),'Add TYPESAFE_API_KEY to .env.');
-else{let installed=true;try{await import('@receptron/laya');}catch{installed=false;}check('Laya package',installed,'Run npm install (or pnpm install) in this folder.');}
+let installed=true;try{await import('@receptron/laya');}catch{installed=false;}check('Laya package',installed,'Run npm install (or pnpm install) in this folder.');
+console.log(`${value('TYPESAFE_API_KEY')||value('JEV_API_KEY')?'OK':'OPTIONAL'} Jev key${value('TYPESAFE_API_KEY')||value('JEV_API_KEY')?'':': only needed for runs that choose Jev as the classifier.'}`);
 if(['fireworks','groq'].includes(provider))check(`${provider} key`,Boolean(value(provider==='groq'?'GROQ_API_KEY':'FIREWORKS_API_KEY')),`Add your ${provider} key to .env.`);
 console.log('Keys are checked for presence only. No key values are printed and no paid requests are made.');
 console.log(failures?'Fix the items above for live analysis. The synthetic demo still works without keys.':'Ready for a pilot. Start the app and verify Connections.');

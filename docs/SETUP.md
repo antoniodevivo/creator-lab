@@ -67,7 +67,7 @@ This copies `.env.example` to `.env`. It never overwrites an existing `.env`. Op
 | Key | Where to get it | What it does |
 | --- | --- | --- |
 | Apify | [Apify Console](https://console.apify.com/), account settings / API integrations | Collects Reel URLs, thumbnails and public metrics |
-| Jev, optional | [TypeSafe](https://typesafe.ai/), your account's API key settings; [API documentation](https://docs.typesafe.ai/api). Only with `CLASSIFIER=jev` | Labels transcripts and script passages instead of local Laya |
+| Jev, optional | [TypeSafe](https://typesafe.ai/), your account's API key settings; [API documentation](https://docs.typesafe.ai/api). Only for runs that choose Jev | Labels transcripts and script passages instead of local Laya |
 | Fireworks, one option | [Fireworks account](https://app.fireworks.ai/), API keys | Transcribes audio with Whisper V3 Turbo |
 | Groq, alternative | [Groq API keys](https://console.groq.com/keys) | Transcribes audio with Whisper Large V3 Turbo |
 
@@ -79,7 +79,6 @@ For **Fireworks**, fill these entries in `.env`:
 
 ```dotenv
 APIFY_TOKEN=your_apify_token
-CLASSIFIER=laya
 TRANSCRIPTION_PROVIDER=fireworks
 FIREWORKS_API_KEY=your_fireworks_key
 PORT=5190
@@ -89,13 +88,12 @@ For **Groq**, use:
 
 ```dotenv
 APIFY_TOKEN=your_apify_token
-CLASSIFIER=laya
 TRANSCRIPTION_PROVIDER=groq
 GROQ_API_KEY=your_groq_key
 PORT=5190
 ```
 
-Replace the example values with your own keys. Keep just one value per setting. Leave the unused speech provider key empty. You do not need to edit any JavaScript. To classify with TypeSafe Jev instead of Laya, set `CLASSIFIER=jev` and `TYPESAFE_API_KEY=your_typesafe_key`. Laya and Jev results are cached separately.
+Replace the example values with your own keys. Keep just one value per setting. Leave the unused speech provider key empty. You do not need to edit any JavaScript. The classifier is chosen for each analysis in the **New analysis** form. Laya is the default and needs no key; to choose Jev, also add `TYPESAFE_API_KEY=your_typesafe_key`. A run keeps its classifier when paused and resumed. Laya and Jev results are cached separately.
 
 The default local pacing settings are `FIREWORKS_REQUESTS_PER_MINUTE=60` and `GROQ_REQUESTS_PER_MINUTE=20`. These are local ceilings, not a statement of your account quota. Lower them if your account has a lower limit. Audio-duration quotas can also apply.
 

@@ -27,7 +27,7 @@ Built with **Apify → Fireworks or Groq → a Jev-compatible classifier**. Clas
    npm run setup
    ```
 
-4. Open `.env` in your editor. Add `APIFY_TOKEN` and **one** transcription key: `FIREWORKS_API_KEY` or `GROQ_API_KEY`. Set `TRANSCRIPTION_PROVIDER` to match. `CLASSIFIER=laya` needs no key; to use TypeSafe instead, set `CLASSIFIER=jev` and add `TYPESAFE_API_KEY`.
+4. Open `.env` in your editor. Add `APIFY_TOKEN` and **one** transcription key: `FIREWORKS_API_KEY` or `GROQ_API_KEY`. Set `TRANSCRIPTION_PROVIDER` to match. The classifier is chosen per analysis in the **New analysis** form: Laya needs no key; Jev needs `TYPESAFE_API_KEY`.
 5. Check and launch:
 
    ```sh
@@ -56,8 +56,8 @@ The classifier sees the speech before performance metrics are joined. Views and 
 | Collect Reel metadata and media URLs | [Apify Instagram Reel Scraper](https://apify.com/apify/instagram-reel-scraper) | `APIFY_TOKEN` |
 | Transcribe, default option | [Fireworks](https://fireworks.ai/) | `TRANSCRIPTION_PROVIDER=fireworks`, `FIREWORKS_API_KEY` |
 | Transcribe, alternative | [Groq](https://console.groq.com/docs/speech-to-text) | `TRANSCRIPTION_PROVIDER=groq`, `GROQ_API_KEY` |
-| Classify scripts, default option | [Laya](https://github.com/receptron/laya), local, no key | `CLASSIFIER=laya` |
-| Classify scripts, alternative | [TypeSafe Jev](https://docs.typesafe.ai/api) | `CLASSIFIER=jev`, `TYPESAFE_API_KEY` |
+| Classify scripts, default option | [Laya](https://github.com/receptron/laya), local, no key | Choose **Laya** in New analysis |
+| Classify scripts, alternative | [TypeSafe Jev](https://docs.typesafe.ai/api) | Choose **Jev** in New analysis, `TYPESAFE_API_KEY` |
 
 Use either transcription provider. There is no automatic switch that could charge a different provider. Restart the server after changing `.env`.
 
