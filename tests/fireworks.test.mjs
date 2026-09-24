@@ -5,6 +5,7 @@ import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {Pipeline} from '../lib/pipeline.mjs';
 import {prepareAudio,transcribe,RunPausedError,request} from '../lib/providers.mjs';
+import {FFMPEG} from '../lib/ffmpeg.mjs';
 // A valid one-second WAV exercises real ffmpeg extraction and duration measurement.
 function wav(){const b=Buffer.alloc(44+32000);b.write('RIFF');b.writeUInt32LE(b.length-8,4);b.write('WAVEfmt ',8);b.writeUInt32LE(16,16);b.writeUInt16LE(1,20);b.writeUInt16LE(1,22);b.writeUInt32LE(16000,24);b.writeUInt32LE(32000,28);b.writeUInt16LE(2,32);b.writeUInt16LE(16,34);b.write('data',36);b.writeUInt32LE(32000,40);return b;}
 const row={id:'fireworks-fixture',ownerUsername:'tester',audioUrl:'https://scontent.cdninstagram.com/broken.m4a',videoUrl:'https://scontent.cdninstagram.com/video.mp4',videoDuration:400};
@@ -32,7 +33,7 @@ test('verified silent video is excluded without paying for transcription; failed
  const {execFileSync}=await import('node:child_process');const {readFile}=await import('node:fs/promises');
  const root=await mkdtemp(join(tmpdir(),'silent-reel-test-'));const old=global.fetch;
  try{
-  const fixture=join(root,'silent.mp4');execFileSync('ffmpeg',['-y','-v','error','-f','lavfi','-i','color=c=black:s=16x16:d=0.1','-an',fixture]);const video=await readFile(fixture);
+  const fixture=join(root,'silent.mp4');execFileSync(FFMPEG,['-y','-v','error','-f','lavfi','-i','color=c=black:s=16x16:d=0.1','-an',fixture]);const video=await readFile(fixture);
   global.fetch=async url=>{assert.ok(String(url).includes('cdninstagram.com'));return new Response(video);};
   const pipeline=await new Pipeline(root,()=>({fireworks:'test',jev:'test'}),{transcriptionProvider:'fireworks'}).init();
   const job=await pipeline.create({creator:'tester',limit:1,classifier:'jev'},[{...row,audioUrl:''}]);await pipeline.run(job.id);while(pipeline.active.size)await new Promise(r=>setTimeout(r,10));await pipeline.writes.get(job.id);

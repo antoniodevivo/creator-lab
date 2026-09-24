@@ -20,6 +20,8 @@
   "description": "Local Instagram Reel research with Apify, Fireworks or Groq, and a Jev-compatible classifier (local Laya or TypeSafe Jev).",
   "license": "MIT",
   "dependencies": {
+    "@ffmpeg-installer/ffmpeg": "^1.1.0",
+    "@ffprobe-installer/ffprobe": "^2.1.2",
     "@receptron/laya": "^0.1.2"
   }
 }

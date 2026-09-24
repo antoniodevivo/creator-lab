@@ -1,43 +1,20 @@
 # Set up your own creator research dashboard
 
-You need a computer, Node.js, FFmpeg, and two API keys: Apify, and either Fireworks or Groq. Scripts are classified locally with Laya, an open-source Jev-compatible model, so no classifier key is needed (TypeSafe Jev is still supported). You do not need both speech providers. No Instagram password is requested.
+You need a computer, Node.js, and two API keys: Apify, and either Fireworks or Groq. Scripts are classified locally with Laya, an open-source Jev-compatible model, so no classifier key is needed (TypeSafe Jev is still supported). You do not need both speech providers. No Instagram password is requested.
 
 ## 1. Install the tools
 
 Install Node.js 24 from [nodejs.org](https://nodejs.org/en/download). Node 22.9 or newer also works. Open a new terminal after installing it.
 
-Install FFmpeg using the option for your computer:
+FFmpeg and ffprobe are installed with the project (`npm install` in step 2): the `@ffmpeg-installer/ffmpeg` and `@ffprobe-installer/ffprobe` packages ship a binary per platform, so you do not need a separate FFmpeg install. If no bundled binary exists for your platform, the app falls back to `ffmpeg` and `ffprobe` on PATH.
 
-**macOS with Homebrew**
-
-```sh
-brew install ffmpeg
-```
-
-If you do not have Homebrew, use the macOS build links on [FFmpeg's download page](https://ffmpeg.org/download.html), or install Homebrew from its official site first.
-
-**Windows with WinGet, in PowerShell**
-
-```powershell
-winget install --id Gyan.FFmpeg --exact
-```
-
-Close and reopen PowerShell after installation. If WinGet is unavailable, use the Windows build links on FFmpeg's download page and add its `bin` folder to PATH.
-
-**Ubuntu / Debian**
-
-```sh
-sudo apt update
-sudo apt install ffmpeg
-```
+With pnpm, `pnpm-workspace.yaml` installs the Windows and Linux binaries side by side, so the same folder works from Windows and from WSL2. npm installs only the binaries for the system you run it on.
 
 Verify installation:
 
 ```sh
 node --version
 npm --version
-ffmpeg -version
-ffprobe -version
 ```
 
 ## 2. Download Creator Lab
@@ -109,7 +86,7 @@ npm run laya:cuda-setup   # CUDA provider for onnxruntime-node; CUDA 13 runtime 
 npm run start:cuda        # starts the server with those libraries available
 ```
 
-`laya:cuda-setup` installs the NVIDIA libraries under `~/.local/laya-cuda` when [uv](https://docs.astral.sh/uv/) is installed; otherwise install CUDA 13 (cudart and cuBLAS) system-wide. cuDNN is not needed. When the GPU runtime is found, **New analysis** offers **Laya · GPU (CUDA)** next to **Laya · processor**; otherwise only the processor option is shown. Both run the same model and share cached results. The browser on Windows opens the server at the usual `http://127.0.0.1:5190`. Inside WSL, keep the Laya model cache on the Linux filesystem (the default `~/.cache/receptron-laya`): loading it from `/mnt/c` took about 60 s instead of 5 s. FFmpeg must also be installed inside WSL (`sudo apt install ffmpeg`) because transcription runs there too.
+`laya:cuda-setup` installs the NVIDIA libraries under `~/.local/laya-cuda` when [uv](https://docs.astral.sh/uv/) is installed; otherwise install CUDA 13 (cudart and cuBLAS) system-wide. cuDNN is not needed. When the GPU runtime is found, **New analysis** offers **Laya · GPU (CUDA)** next to **Laya · processor**; otherwise only the processor option is shown. Both run the same model and share cached results. The browser on Windows opens the server at the usual `http://127.0.0.1:5190`. Inside WSL, keep the Laya model cache on the Linux filesystem (the default `~/.cache/receptron-laya`): loading it from `/mnt/c` took about 60 s instead of 5 s.
 
 ## 5. Launch and verify
 
@@ -161,7 +138,7 @@ If an Apify launch response is lost, the app blocks a duplicate launch. Find the
 | --- | --- |
 | `node` or `npm` not found | Install Node.js, then reopen the terminal. |
 | `--env-file-if-exists` unsupported | Upgrade to Node 22.9 or newer. |
-| FFmpeg or ffprobe missing | Install FFmpeg and ensure both commands are on PATH. |
+| FFmpeg or ffprobe missing | Run `npm install` again (the binaries come from npm). On an unsupported platform, install FFmpeg and put `ffmpeg` and `ffprobe` on PATH. |
 | Missing key after editing `.env` | Confirm it is named `.env`, not `.env.txt`, in the same folder as `server.mjs`. Restart. |
 | HTTP 401 or 403 | Check the selected provider key, account permissions and billing. |
 | HTTP 429 / paused run | Check provider quotas. Wait for reset or lower pacing; then resume. Short rate limits retry automatically. |

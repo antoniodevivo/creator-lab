@@ -1,13 +1,14 @@
 import {readFile} from 'node:fs/promises';
 import {parseEnv} from 'node:util';
 import {spawnSync} from 'node:child_process';
+import {FFMPEG,FFPROBE} from '../lib/ffmpeg.mjs';
 let config={};try{config=parseEnv(await readFile(new URL('../.env',import.meta.url),'utf8'));}catch{}
 const value=name=>config[name]||process.env[name];
 let failures=0;
 function check(name,ok,hint){console.log(`${ok?'OK':'MISSING'} ${name}${ok?'':`: ${hint}`}`);if(!ok)failures++;}
 const [major,minor]=process.versions.node.split('.').map(Number);
 check('Node.js',major>22||major===22&&minor>=9,'Install Node 24 LTS or Node >=22.9.');
-for(const cmd of ['ffmpeg','ffprobe'])check(cmd,spawnSync(cmd,['-version'],{stdio:'ignore'}).status===0,'Install FFmpeg, then reopen your terminal.');
+for(const [name,cmd] of [['ffmpeg',FFMPEG],['ffprobe',FFPROBE]])check(name,spawnSync(cmd,['-version'],{stdio:'ignore'}).status===0,'Run npm install (bundled FFmpeg), or install FFmpeg and reopen your terminal.');
 const provider=value('TRANSCRIPTION_PROVIDER')||'fireworks';
 check('Transcription provider',['fireworks','groq'].includes(provider),'Set TRANSCRIPTION_PROVIDER to fireworks or groq.');
 check('Apify key',Boolean(value('APIFY_TOKEN')||value('APIFY_API_TOKEN')),'Add APIFY_TOKEN to .env.');

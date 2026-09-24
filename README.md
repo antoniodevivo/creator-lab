@@ -12,7 +12,7 @@ Built with **Apify → Fireworks or Groq → a Jev-compatible classifier**. Clas
 
 **[Full setup guide](docs/SETUP.md)** covers installing the tools, getting keys, choosing a transcription provider, your first analysis, and troubleshooting.
 
-1. Install [Node.js](https://nodejs.org/en/download) (24 recommended; minimum 22.9) and [FFmpeg](https://ffmpeg.org/download.html). Both `ffmpeg` and `ffprobe` must be on PATH.
+1. Install [Node.js](https://nodejs.org/en/download) (24 recommended; minimum 22.9). FFmpeg and ffprobe come with `npm install`; no separate install is needed.
 2. Download this repository using **Code → Download ZIP**, unzip it, and open a terminal in that folder. Or clone it:
 
    ```sh
