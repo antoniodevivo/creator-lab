@@ -44,6 +44,7 @@ The only npm dependency is Laya (with ONNX Runtime); there is no build step. The
 - Eight transcript classifications: topic, opening move, hook mechanism, script structure, evidence, emotional appeal, advice specificity, and spoken CTA.
 - Script passages labeled as hook, setup, problem, example, advice, payoff, CTA, or other, with source text and available timestamps.
 - Combined topic and hook filters, engagement comparisons with sample sizes, and original-Reel links.
+- Recurring patterns for the current selection: repeated topic/hook/structure formats, phrases of 2–4 words said in several Reels, shared openings, and key terms (distinctive against the whole archive when you filter by topic or hook). Each shows how many Reels share it and their median reach against the selection; click one to see those Reels. Counts are per Reel, and function words and filler are ignored (English and Italian lists).
 - A synchronized thumbnail wall and performance map, with saved-result replay for screen recording.
 - Pausing, resuming, transcript reuse, classification caching, and JSON exports.
 

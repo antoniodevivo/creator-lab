@@ -1,4 +1,5 @@
 import {filterPosts,groupPosts,summarize,sortExamples,rate} from './research.mjs';
+import {findPatterns} from './patterns.mjs';
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
 const escape=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const openingLine=p=>{const text=p.analysis?.opening||p.transcript?.text||'';const sentence=text.match(/^.*?[.!?](?:\s|$)/s)?.[0]?.trim();return sentence||((text.length>180?text.slice(0,177)+'…':text));};
@@ -7,7 +8,7 @@ const compact=n=>n===null||n===undefined?'Unknown':new Intl.NumberFormat('en',{n
 const money=(n,d=4)=>n===null?'Unknown':`$${n.toFixed(d)}`;
 const colors=['#899967','#c58e65','#8babc0','#bf8585','#a39dc0','#81aaa0','#c2b275','#929789','#849d65','#bb9279'];
 const roleColors={hook:'#b3c966',setup:'#a8b9b0',problem:'#cd937d',example:'#87a9bd',advice:'#889f70',payoff:'#b1a4c5',cta:'#d2b266',other:'#bcc2b4',unclear:'#bcc2b4'};
-let boot,job,selected,dimension='mechanism',category='all',plot=[],groups=[],visible=[],replaying=false,replayToken=0,replayRevealed=new Set(),refreshTimer,metricsInitialized=false;
+let boot,job,selected,dimension='mechanism',category='all',patternFilter=null,plot=[],groups=[],visible=[],replaying=false,replayToken=0,replayRevealed=new Set(),refreshTimer,metricsInitialized=false;
 let compareKeys=new Set(),comparisonOpen=false,examplePage=0;
 const api=async(path,data)=>{const r=await fetch(path,data===undefined?{}:{method:'POST',headers:{'Content-Type':'application/json','X-Lab-Token':boot.token},body:JSON.stringify(data)});const v=await r.json();if(!r.ok)throw new Error(v.error||'Request failed');return v;};
 function toast(text){$('#toast').textContent=text;$('#toast').hidden=false;setTimeout(()=>$('#toast').hidden=true,5500);}
@@ -123,7 +124,23 @@ function selectPost(id){selected=id;const p=job.posts.find(p=>p.id===id);if(!p)r
  for(const tile of $$('.tile'))tile.classList.toggle('selected',tile.dataset.id===selected);
 }
 const formatRate=(n,digits=1)=>n===null?'Unknown':n.toFixed(digits);
-function researchPosts(){return visible.filter(p=>p.analysis&&!p.excludedReason&&(category==='all'||value(p)===category));}
+function selectionPosts(){return visible.filter(p=>p.analysis&&!p.excludedReason&&(category==='all'||value(p)===category));}
+// A clicked pattern narrows the examples to the Reels that share it; the patterns themselves use the full selection.
+function researchPosts(){const posts=selectionPosts();return patternFilter?posts.filter(p=>patternFilter.ids.has(p.id)):posts;}
+const PATTERN_KINDS=[['combos','Recurring formats','Topic · hook · structure combinations that repeat'],['phrases','Recurring phrases','2–4 word expressions said in several Reels'],['openings','Recurring openings','How several Reels start'],['terms','Key terms','Words and pairs that set this selection apart']];
+function renderPatterns(){
+ const metric=$('#metric').value,posts=selectionPosts();
+ // Distinctive terms compare a label-filtered selection with the whole archive; otherwise they are just the most used.
+ const narrowed=category!=='all'||$('#topic-filter').value!=='all'||$('#hook-filter').value!=='all';const all=narrowed?job.posts.filter(p=>p.analysis&&!p.excludedReason&&!p.duplicateOf):posts;
+ const r=findPatterns(posts,all,{metric});
+ if(r.n<4){$('#patterns').innerHTML=`<p class="patterns-empty">Recurring patterns need at least 4 transcribed Reels in this selection (${r.n} now).</p>`;return;}
+ const vs=x=>x.reach!==null&&r.baseline.reach?`${x.reach>=r.baseline.reach?'+':''}${Math.round((x.reach/r.baseline.reach-1)*100)}%`:'';
+ const cards=PATTERN_KINDS.map(([key,heading,hint])=>{const items=r[key];const subtitle=key==='terms'&&!r.narrower?'Most used content words across all Reels':hint;
+  const list=items.length?`<ol>${items.map(x=>`<li><button class="${patternFilter?.label===x.label?'active':''}" data-pattern="${escape(x.label)}" data-ids="${escape(x.ids.join(','))}" title="Show these Reels"><span>${escape(key==='combos'?x.label.split(' · ').map(title).join(' · '):x.label)}</span><small>${x.n} Reels · ${Math.round(x.share*100)}% · ${compact(x.reach)} <em class="${x.reach>=r.baseline.reach?'up':'down'}">${vs(x)}</em></small></button></li>`).join('')}</ol>`:'<p class="patterns-empty">Nothing repeats enough in this selection.</p>';
+  return `<article class="pattern-card"><header><h4>${heading}</h4><small>${subtitle}</small></header>${list}</article>`;}).join('');
+ $('#patterns').innerHTML=`<div class="patterns-heading"><span class="eyebrow">WHAT KEEPS COMING BACK</span><p>${r.n} transcribed Reels · a pattern needs at least ${Math.max(2,Math.ceil(r.n*0.03))} of them · median ${metric} ${compact(r.baseline.reach)}; the % compares each pattern with it. Click a pattern to see its Reels.</p></div><div class="pattern-grid">${cards}</div>`;
+ $('#patterns').querySelectorAll('[data-pattern]').forEach(b=>b.onclick=()=>{stopReplay();const same=patternFilter?.label===b.dataset.pattern;patternFilter=same?null:{label:b.dataset.pattern,ids:new Set(b.dataset.ids.split(','))};examplePage=0;renderGroups();if(!same)$('#example-grid').scrollIntoView({behavior:'smooth',block:'start'});});
+}
 function renderGroups(){
  const metric=$('#metric').value,sort=$('#research-sort').value;const valid=new Set(groups.map(g=>g.key));compareKeys=new Set([...compareKeys].filter(key=>valid.has(key)));if(compareKeys.size!==2)comparisonOpen=false;
  $('#group-title').textContent=boot.dimensions[dimension].title;$('#median-heading').textContent=`Median ${metric}`;
@@ -135,7 +152,7 @@ function renderGroups(){
  $('#group-table').querySelectorAll('[data-group]').forEach(b=>b.onclick=()=>{stopReplay();category=b.dataset.group;examplePage=0;render();$('#example-grid').scrollIntoView({behavior:'smooth',block:'start'});});
  $('#group-table').querySelectorAll('[data-compare]').forEach(b=>b.onchange=()=>{if(b.checked)compareKeys.add(b.dataset.compare);else compareKeys.delete(b.dataset.compare);comparisonOpen=false;renderGroups();});
  $('#compare-selected').disabled=compareKeys.size!==2;$('#compare-selected').textContent=`Compare ${compareKeys.size} / 2`;
- renderComparison();renderExamples();
+ renderPatterns();renderComparison();renderExamples();
 }
 function renderComparison(){
  const selectedGroups=[...compareKeys].map(key=>groups.find(g=>g.key===key)).filter(Boolean);$('#comparison').hidden=!comparisonOpen||selectedGroups.length!==2;if($('#comparison').hidden){$('#comparison').innerHTML='';return;}
@@ -145,13 +162,13 @@ function renderComparison(){
 }
 function renderExamples(){
  const metric=$('#metric').value,sort=$('#research-sort').value;const sorted=sortExamples(researchPosts(),sort,metric),pages=Math.max(1,Math.ceil(sorted.length/6));examplePage=Math.min(examplePage,pages-1);const shown=sorted.slice(examplePage*6,examplePage*6+6);
- $('#examples-title').textContent=category==='all'?`All matching patterns · ${sorted.length} Reels`:`${title(category)} · ${sorted.length} Reels`;
- $('#examples-all').hidden=category==='all';$('#examples-page').textContent=sorted.length?`${examplePage*6+1}–${Math.min((examplePage+1)*6,sorted.length)} of ${sorted.length} · Highest ${sort==='reach'?metric:sort==='likeRate'?'likes / 1k':'comments / 1k'} first`:'No matching examples';$('#examples-prev').disabled=examplePage===0;$('#examples-next').disabled=examplePage>=pages-1;
+ $('#examples-title').textContent=(patternFilter?`“${patternFilter.label}” · `:'')+(category==='all'?`${patternFilter?'':'All matching patterns · '}${sorted.length} Reels`:`${title(category)} · ${sorted.length} Reels`);
+ $('#examples-all').hidden=category==='all'&&!patternFilter;$('#examples-page').textContent=sorted.length?`${examplePage*6+1}–${Math.min((examplePage+1)*6,sorted.length)} of ${sorted.length} · Highest ${sort==='reach'?metric:sort==='likeRate'?'likes / 1k':'comments / 1k'} first`:'No matching examples';$('#examples-prev').disabled=examplePage===0;$('#examples-next').disabled=examplePage>=pages-1;
  $('#example-grid').innerHTML=shown.length?shown.map(p=>`<article class="example-card" data-post="${escape(p.id)}"><button class="example-thumbnail" data-inspect="${escape(p.id)}" aria-label="Inspect Reel ${escape(p.id)}"><img src="${escape(imageURL(p))}" loading="lazy" alt="Reel thumbnail"><span>Inspect script ↗</span></button><div class="example-copy"><small>${title(p.analysis.labels.topic?.value)} · ${title(p.analysis.labels.mechanism?.value)}</small><h4>${escape(openingLine(p))}</h4><div class="example-metrics"><span><b>${compact(p[metric])}</b> ${metric}</span><span><b>${compact(p.likes)}</b> likes</span><span><b>${formatRate(rate(p,'likes',metric))}</b> likes / 1k</span><span><b>${formatRate(rate(p,'comments',metric),2)}</b> comments / 1k</span></div><div class="example-links"><button class="quiet" data-inspect="${escape(p.id)}">Read script ↗</button>${!job.synthetic&&safeLink(p.url)?`<a href="${escape(safeLink(p.url))}" target="_blank" rel="noopener noreferrer">Original Reel ↗</a>`:'<span>Synthetic example</span>'}</div></div></article>`).join(''):'<p class="examples-empty">No examples for this combination. Clear a filter to explore more Reels.</p>';
  $('#example-grid').querySelectorAll('[data-inspect]').forEach(b=>b.onclick=()=>{selectPost(b.dataset.inspect);$('.inspector').scrollIntoView({behavior:'smooth',block:'center'});});
 }
 function render(){if(!metricsInitialized&&job.posts.length){if(!job.posts.some(p=>p.views>0)&&job.posts.some(p=>p.plays>0))$('#metric').value='plays';else $('#metric').value='views';if(job.posts.length<100||!job.posts.some(p=>p.publishedAt&&(Date.now()-Date.parse(p.publishedAt))/864e5>=7))$('#age').value='0';else $('#age').value='7';metricsInitialized=true;}readStats();calculate();$('.inspector').classList.toggle('no-matches',!visible.length);$('#inspector-empty').hidden=visible.length>0;renderLegend();buildTiles();layout();renderGroups();if(!selected&&job.posts.length)selectPost((job.posts.find(p=>p.analysis&&!p.excludedReason)||job.posts[0]).id);}
-async function loadJob(id){stopReplay();job=await api(id==='demo'?'/api/demo':`/api/runs/${id}`);selected=(job.posts.find(p=>p.analysis&&!p.excludedReason)||job.posts[0])?.id;metricsInitialized=false;category='all';compareKeys.clear();comparisonOpen=false;examplePage=0;$('#topic-filter').value='all';$('#hook-filter').value='all';$('#tiles').innerHTML='';$('#map-tiles').innerHTML='';$('#comparison').hidden=true;render();if(selected)selectPost(selected);else{$('#opening').textContent='Collecting the archive. The first spoken opening will appear here.';$('#post-creator').textContent=`@${job.creator}`;$('#preview-image').hidden=true;$('#preview-play').hidden=true;$('#original').hidden=true;$('#transcript').textContent='';$('#anatomy-bar').innerHTML='';$('#anatomy-legend').innerHTML='';$('#all-labels').innerHTML='';$('#post-tags').innerHTML='';$('#post-date').textContent='';$('#post-views').textContent='Unknown';$('#post-likes').textContent='Unknown';$('#post-rate').textContent='Unknown';}}
+async function loadJob(id){stopReplay();job=await api(id==='demo'?'/api/demo':`/api/runs/${id}`);selected=(job.posts.find(p=>p.analysis&&!p.excludedReason)||job.posts[0])?.id;metricsInitialized=false;category='all';patternFilter=null;compareKeys.clear();comparisonOpen=false;examplePage=0;$('#topic-filter').value='all';$('#hook-filter').value='all';$('#tiles').innerHTML='';$('#map-tiles').innerHTML='';$('#comparison').hidden=true;render();if(selected)selectPost(selected);else{$('#opening').textContent='Collecting the archive. The first spoken opening will appear here.';$('#post-creator').textContent=`@${job.creator}`;$('#preview-image').hidden=true;$('#preview-play').hidden=true;$('#original').hidden=true;$('#transcript').textContent='';$('#anatomy-bar').innerHTML='';$('#anatomy-legend').innerHTML='';$('#all-labels').innerHTML='';$('#post-tags').innerHTML='';$('#post-date').textContent='';$('#post-views').textContent='Unknown';$('#post-likes').textContent='Unknown';$('#post-rate').textContent='Unknown';}}
 async function refresh(){boot=await api('/api/bootstrap');const current=job?.id||'demo';$('#run-select').innerHTML='<option value="demo">Motion rehearsal · synthetic data</option>'+boot.runs.map(r=>`<option value="${r.id}">@${escape(r.creator)} · ${r.completed}/${r.count} · ${r.status}</option>`).join('');$('#run-select').value=current;renderConnections();}
 function renderConnections(){const active=['apify',boot.transcriptionProvider||'groq',$('#classifier-select').value];const count=active.filter(k=>boot.connections[k]?.configured).length;$('#connection-status').textContent=`${count}/3 connections ready`;$('#laya-cuda-line').hidden=!boot.classifiers?.includes('laya-cuda');renderClassifierOptions();for(const k of ['apify','groq','fireworks','jev','laya','laya-cuda'])$(`#${k}-status`).textContent=k.startsWith('laya')?(boot.connections[k]?.verified?'· model loaded':'· local, no key'):boot.connections[k]?.verified?'· key verified':boot.connections[k]?.configured?'· configured':active.includes(k)?'· needed':'· optional';$('#transcription-provider').textContent=title(boot.transcriptionProvider||'groq');}
 
@@ -168,10 +185,10 @@ async function start(){boot=await api('/api/bootstrap');$('#dimension').innerHTM
 $('#run-select').onchange=e=>loadJob(e.target.value).catch(e=>toast(e.message));
 $('#dimension').onchange=e=>{stopReplay();dimension=e.target.value;category='all';compareKeys.clear();comparisonOpen=false;examplePage=0;render();};
 for(const id of ['metric','age','confidence','duration','dedupe','topic-filter','hook-filter'])$(`#${id}`).onchange=()=>{stopReplay();category='all';examplePage=0;comparisonOpen=false;render();const first=researchPosts()[0]||visible[0];if(first&&!visible.some(p=>p.id===selected))selectPost(first.id);else if(selected)selectPost(selected);};
-$('#clear-research').onclick=()=>{stopReplay();$('#topic-filter').value='all';$('#hook-filter').value='all';category='all';examplePage=0;render();};
+$('#clear-research').onclick=()=>{stopReplay();$('#topic-filter').value='all';$('#hook-filter').value='all';category='all';patternFilter=null;examplePage=0;render();};
 $('#research-sort').onchange=()=>{examplePage=0;calculate();renderGroups();};
 $('#compare-selected').onclick=()=>{comparisonOpen=true;renderComparison();$('#comparison').scrollIntoView({behavior:'smooth',block:'center'});};
-$('#examples-all').onclick=()=>{stopReplay();category='all';examplePage=0;render();};
+$('#examples-all').onclick=()=>{stopReplay();category='all';patternFilter=null;examplePage=0;render();};
 $('#examples-prev').onclick=()=>{examplePage=Math.max(0,examplePage-1);renderExamples();};
 $('#examples-next').onclick=()=>{examplePage++;renderExamples();};
 $('#replay').onclick=replay;

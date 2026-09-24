@@ -25,3 +25,26 @@
 .phase-failed{background:#c0694f;transition:width .5s}
 @media (max-width:760px){.phases{grid-template-columns:1fr 1fr}.phase:nth-child(2){border-right:0}.phase:nth-child(-n+2){border-bottom:1px solid var(--line)}}
 .portrait .phases{display:none}
+
+.patterns{margin:0 0 26px}
+.patterns-heading{display:flex;gap:18px;align-items:baseline;flex-wrap:wrap;margin-bottom:12px}
+.patterns-heading p{margin:0;font-size:13px;color:var(--muted)}
+.pattern-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));border:1px solid var(--line);background:#f9f8f2}
+.pattern-card{padding:16px 18px;border-right:1px solid var(--line);min-width:0}
+.pattern-card:last-child{border:0}
+.pattern-card header{margin-bottom:10px}
+.pattern-card h4{margin:0;font-size:15px;font-weight:500}
+.pattern-card header small{font:9px var(--mono);letter-spacing:.5px;color:var(--muted)}
+.pattern-card ol{list-style:none;margin:0;padding:0}
+.pattern-card li button{display:block;width:100%;text-align:left;background:none;border:0;border-top:1px solid var(--line);padding:7px 4px;cursor:pointer;font:inherit;color:inherit}
+.pattern-card li:first-child button{border-top:0}
+.pattern-card li button:hover span,.pattern-card li button.active span{text-decoration:underline}
+.pattern-card li button.active{background:#ecefe2}
+.pattern-card li span{display:block;font-size:14px;overflow-wrap:anywhere}
+.pattern-card li small{font:10px var(--mono);color:var(--muted);font-variant-numeric:tabular-nums}
+.pattern-card em{font-style:normal}
+.pattern-card em.up{color:#5f7a4c}
+.pattern-card em.down{color:#b0593f}
+.patterns-empty{font-size:13px;color:var(--muted);margin:0}
+@media (max-width:900px){.pattern-grid{grid-template-columns:1fr 1fr}.pattern-card:nth-child(2){border-right:0}.pattern-card:nth-child(-n+2){border-bottom:1px solid var(--line)}}
+@media (max-width:560px){.pattern-grid{grid-template-columns:1fr}.pattern-card{border-right:0;border-bottom:1px solid var(--line)}}
