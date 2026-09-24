@@ -20,13 +20,34 @@ const value=p=>p.excludedReason?(p.status==='no_audio'?'no_audio':'too_little_sp
 // Options come from the server: Laya on CUDA is listed only where the GPU runtime is installed.
 function renderClassifierOptions(){const select=$('#classifier-select');const current=select.value;const labels={laya:'Laya · processor, free, no key','laya-cuda':'Laya · GPU (CUDA), free, no key',jev:`Jev · TypeSafe API key${boot.connections.jev?.configured?'':' (not configured)'}`};select.replaceChildren(...(boot.classifiers||['laya','jev']).map(c=>{const o=document.createElement('option');o.value=c;o.textContent=labels[c]||c;return o;}));if([...select.options].some(o=>o.value===current))select.value=current;}
 const classifierTitle=c=>({jev:'JEV','laya-cuda':'LAYA · GPU'})[c]||'LAYA';
+// One bar per phase. A Reel counts as done, skipped (no audio / too little speech), failed, or in progress.
+const PHASE_CLASSIFIER={laya:'Laya · processor','laya-cuda':'Laya · GPU',jev:'Jev'};
+function phaseCounts(ps){
+ const imported=p=>p.transcript?.source==='import';
+ const failedAt=p=>p.status==='failed'?(!p.transcript?(p.media?'transcripts':'videos'):'classification'):null;
+ const thumbs=ps.filter(p=>p.thumbnailUrl);
+ const tracked=thumbs.some(p=>p.thumbnail);
+ const speech=ps.filter(p=>!imported(p));
+ return [
+  {key:'thumbnails',label:'Thumbnails',total:thumbs.length,done:thumbs.filter(p=>p.thumbnail==='ready').length,failed:thumbs.filter(p=>p.thumbnail==='failed').length,skipped:0,active:0,untracked:!tracked&&job.status!=='running'},
+  {key:'videos',label:'Videos',total:speech.length,done:speech.filter(p=>['downloaded','remote'].includes(p.media)||(!p.media&&p.transcript)).length,skipped:speech.filter(p=>p.media==='no_audio'||p.status==='no_audio').length,failed:speech.filter(p=>failedAt(p)==='videos').length,active:speech.filter(p=>p.status==='transcribing'&&!p.media).length},
+  {key:'transcripts',label:'Transcripts',total:ps.length,done:ps.filter(p=>p.transcript).length,skipped:ps.filter(p=>p.status==='no_audio').length,failed:ps.filter(p=>failedAt(p)==='transcripts').length,active:ps.filter(p=>p.status==='transcribing'&&p.media).length},
+  {key:'classification',label:`Classification · ${PHASE_CLASSIFIER[job.classifier||'jev']}`,total:ps.length,done:ps.filter(p=>p.analysis).length,skipped:ps.filter(p=>p.excludedReason&&!p.analysis).length,failed:ps.filter(p=>failedAt(p)==='classification').length,active:ps.filter(p=>p.status==='classifying').length},
+ ];
+}
+function renderPhases(){
+ const box=$('#phases');if(job.synthetic||!job.posts.length){box.hidden=true;return;}box.hidden=false;
+ box.innerHTML=phaseCounts(job.posts).map(ph=>{const settled=ph.done+ph.skipped;const pct=ph.total?settled/ph.total*100:0;const failPct=ph.total?ph.failed/ph.total*100:0;
+  const detail=ph.untracked?'loaded on demand':[`${ph.done}/${ph.total}`,ph.active&&`${ph.active} in progress`,ph.skipped&&`${ph.skipped} skipped`,ph.failed&&`${ph.failed} failed`].filter(Boolean).join(' · ');
+  return `<div class="phase" data-phase="${ph.key}"><span>${escape(ph.label).toUpperCase()}</span><div class="phase-track"><div class="phase-done" style="width:${ph.untracked?0:pct}%"></div><div class="phase-failed" style="width:${ph.untracked?0:failPct}%"></div></div><small>${escape(detail)}</small></div>`;}).join('');
+}
 function readStats(){
  const ps=job.posts;const completed=ps.filter(p=>p.analysis);const transcribed=ps.filter(p=>p.transcript);const excluded=ps.filter(p=>p.excludedReason).length;const failed=ps.filter(p=>p.status==='failed').length;
  $('#stat-collected').textContent=compact(ps.length);$('#stat-transcribed').textContent=job.synthetic?'Demo':compact(transcribed.length);$('#stat-classified').textContent=job.synthetic?'Demo':compact(completed.length);
  const paid=completed.filter(p=>!p.analysis.reused);const jevUnknown=paid.some(p=>p.analysis.costUsd===null);const jev=paid.reduce((s,p)=>s+(p.analysis.costUsd||0),0);
  const audioCosts=['groq','fireworks'].map(provider=>{const audio=transcribed.filter(p=>p.transcript.source===provider&&!p.transcript.reused);return audio.length?`${title(provider)} ${audio.some(p=>p.transcript.costUsd==null)?'unknown':`~${money(audio.reduce((sum,p)=>sum+p.transcript.costUsd,0),3)}`}`:null;}).filter(Boolean).join(' · ')||'Transcription $0';
  $('#stat-cost').textContent=job.synthetic?'Demo':jevUnknown?'Unknown':money(jev);$('#classifier-name').textContent=classifierTitle(job.classifier||'jev');
- $('#pipeline-progress').style.width=`${ps.length?completed.length/ps.length*100:0}%`;
+ renderPhases();$('#pipeline-progress').style.width=`${ps.length?completed.length/ps.length*100:0}%`;
  $('#pipeline-label').textContent=job.synthetic?'MOTION REHEARSAL':`${job.status.toUpperCase()} · ${completed.length}/${ps.length}`;
  $('#cost-detail').textContent=job.synthetic?'Synthetic data · no API calls':`${audioCosts} · Apify ${money(job.costs.apify,3)} · ${job.retries||0} retries`;
  $('#notice').textContent=job.synthetic?'Motion rehearsal. All examples, portraits and metrics below are synthetic.':`@${job.creator} · ${ps.length} retrieved Reels · ${completed.length} classified${excluded?` · ${excluded} excluded from speech analysis`:""}${failed?` · ${failed} need retry`:""} · Metrics are a collection-time snapshot${job.retries?' · Cost estimates may omit uncertain retry charges':''}`;
