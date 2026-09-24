@@ -89,6 +89,7 @@ Tests use mocked provider responses and local FFmpeg fixtures; they do not make 
 - `lib/pipeline.mjs`: processing, persistence, retries, and cache.
 - `lib/schema.mjs`: Jev-compatible classification definitions.
 - `lib/laya.mjs`: local Laya classification. Laya reads at most 512 tokens per question, so each question gets only the part of the transcript it is about: the opening for opening and hook, ~200-word windows (probabilities averaged) for topic, structure, evidence, emotion and specificity, the closing for CTA, and each segment with its preceding words for script roles.
+- Laya is weaker than Jev on subtle labels. On 431 Reel openings labelled by Jev, Laya's hook mechanism matched 30% of the time (always guessing the most common label scores 29.5%); it over-uses `direct`. Treat Laya labels as rough, check confidence, and read the transcripts. A full classification of a 2-minute Reel takes about 15 s on a laptop CPU.
 - `npm run laya:smoke` loads the model and runs one question; `npm run laya:compare -- reels.csv` measures hook-mechanism agreement with Jev labels in a report CSV.
 - `public/`: research dashboard and recording views.
 - `data/`: generated automatically, local only.
